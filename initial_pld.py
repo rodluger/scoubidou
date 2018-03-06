@@ -16,7 +16,8 @@ def initial_flux(clobber=False):
         fpix = data['fpix']
         detrended_flux = data['detrended_flux']
         outliers = data['outliers']
-        return time, fpix, detrended_flux, outliers
+        transits = data['transits']
+        return time, fpix, detrended_flux, outliers, transits
 
     # Load the target pixel file
     with pyfits.open('data/trappist1.fits.gz') as file:
@@ -107,13 +108,26 @@ def initial_flux(clobber=False):
     model = np.dot(A, w)
     detrended_flux = 1 + flux - model
 
+    # Get the transit times
+    dur = 0.025
+    transits = []
+    for planet in ['b', 'c', 'd', 'e', 'f', 'g', 'h']:
+        ttimes, _ = np.loadtxt("data/" + planet + ".ttv", unpack=True)
+        ttimes -= 2454833
+        ttimes = ttimes[(ttimes > time[0]) & (ttimes < time[-1])]
+        for t in ttimes:
+            transits.extend(np.where(np.abs(time - t) < dur)[0])
+    transits = np.array(list(sorted(list(set(transits)))), dtype=int)
+
     # Save
     data = np.savez("data/initial.npz", time=time, fpix=fpix,
-                    detrended_flux=detrended_flux, outliers=outliers)
+                    detrended_flux=detrended_flux,
+                    outliers=outliers, transits=transits)
 
     # Return
-    return time, fpix, detrended_flux, outliers
+    return time, fpix, detrended_flux, outliers, transits
 
 
 if __name__ == "__main__":
-    initial_flux()
+
+    initial_flux(clobber=True)
