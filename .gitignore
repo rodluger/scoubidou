@@ -1,3 +1,5 @@
+data/trappist1.fits.gz
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
