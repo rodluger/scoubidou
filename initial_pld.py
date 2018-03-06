@@ -1,14 +1,23 @@
+"""Load the TRAPPIST-1 short cadence data and do the initial de-trending."""
 try:
     import pyfits
 except ImportError:
     import astropy.io.fits as pyfits
 import numpy as np
 from scipy.signal import savgol_filter
-import matplotlib.pyplot as pl
+import os
 
 
-def initial_flux():
+def initial_flux(clobber=False):
     """Return an initial guess at the de-trended light curve."""
+    if (not clobber) and os.path.exists("data/initial.npz"):
+        data = np.load("data/initial.npz")
+        time = data['time']
+        fpix = data['fpix']
+        detrended_flux = data['detrended_flux']
+        outliers = data['outliers']
+        return time, fpix, detrended_flux, outliers
+
     # Load the target pixel file
     with pyfits.open('data/trappist1.fits.gz') as file:
         time = file[1].data.field('TIME')
@@ -98,8 +107,12 @@ def initial_flux():
     model = np.dot(A, w)
     detrended_flux = 1 + flux - model
 
+    # Save
+    data = np.savez("data/initial.npz", time=time, fpix=fpix,
+                    detrended_flux=detrended_flux, outliers=outliers)
+
     # Return
-    return time, detrended_flux, outliers
+    return time, fpix, detrended_flux, outliers
 
 
 if __name__ == "__main__":
